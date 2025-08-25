@@ -6,7 +6,6 @@ struct Rectangle {
 
 impl Rectangle {
 
-
     fn area(&self) -> u32 {
         self.width * self.height
     }
@@ -26,8 +25,25 @@ impl Rectangle {
             height
         }
     }
+}
+
+
+#[derive(Debug)]
+struct Triangle {
+    width: u32,
+    height: u32
+}
+
+impl Triangle {
+
+    fn area(&self) -> f32 {
+        (self.width * self.height) as f32 / 2.0
+    }
 
 }
+
+
+
 
 fn main() {
 
@@ -48,6 +64,13 @@ fn main() {
     println!("The area of the rect1 is {} square pixels.", rect1.area());
     println!("Can rect1 hold rect2? {}", rect1.can_hold(&rect2));
     println!("Can rect1 hold rect3? {}", rect1.can_hold(&rect3));
+
+    // cannot use instance with other struct as update-notation
+    //let tri1 = Triangle { ..rect1 };
+    let tri1 = Triangle { width: 13, height: 11 };
+    println!("tri1 is {:#?}", tri1);
+    println!("The area of the tri1 is {} square pixels.", tri1.area());
+
 }
 
 
