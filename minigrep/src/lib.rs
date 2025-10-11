@@ -11,14 +11,21 @@ pub struct Config {
     pub case_sensitive: bool,
 }
 
-impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("not enough arguments");
-        }
 
-        let query = args[1].clone();
-        let filename = args[2].clone();
+mod self_iterator;
+
+impl Config {
+    pub fn new<T: Iterator<Item = String>>(mut args: T) -> Result<Config, &'static str> {
+        args.next();
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string"),
+        };
+        let filename = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file name"),
+        };
 
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
 
@@ -50,46 +57,68 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-    results
+    contents.lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     let query = query.to_lowercase();
-    let mut results = Vec::new();
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            results.push(line);
-        }
-    }
-    results
+    contents.lines()
+        .filter(|line| line.to_lowercase().contains(&query))
+        .collect()
 }
 
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
 
     #[test]
-    fn config_new() {
+    fn config_new_case_sensitive() {
         let args: Vec<String> = vec!["aaa".to_string(), "bbb".to_string(), "ccc".to_string()];
-        let result = Config::new(&args);
+        unsafe {
+            env::remove_var("CASE_INSENSITIVE");
+        }
+        let result = Config::new(args.into_iter());
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Config { query:"bbb".to_string(), filename:"ccc".to_string() });
+        assert_eq!(result.unwrap(), Config { query:"bbb".to_string(), filename:"ccc".to_string(), case_sensitive: true });
     }
 
     #[test]
-    fn config_new_args_less_than_three() {
-        let args: Vec<String> = vec!["aaa".to_string(), "bbb".to_string()];
-        let result = Config::new(&args);
+    fn config_new_case_insensitive() {
+        let args: Vec<String> = vec!["aaa".to_string(), "bbb".to_string(), "ccc".to_string()];
+        unsafe {
+            env::set_var("CASE_INSENSITIVE", "1");
+        }
+        let result = Config::new(args.into_iter());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Config { query:"bbb".to_string(), filename:"ccc".to_string(), case_sensitive: false });
+    }
+
+    #[test]
+    fn config_new_no_args() {
+        let args: Vec<String> = vec![];
+        let result = Config::new(args.into_iter());
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "not enough arguments");
+        assert_eq!(result.unwrap_err(), "Didn't get a query string");
+    }
+
+    #[test]
+    fn config_new_args_only_one() {
+        let args: Vec<String> = vec!["aaa".to_string()];
+        let result = Config::new(args.into_iter());
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Didn't get a query string");
+    }
+
+    #[test]
+    fn config_new_args_only_two() {
+        let args: Vec<String> = vec!["aaa".to_string(), "bbb".to_string()];
+        let result = Config::new(args.into_iter());
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Didn't get a file name");
     }
 
     // I couldn't write the unittest for run function. How should we test the system standard output ?
