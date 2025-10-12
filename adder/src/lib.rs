@@ -1,3 +1,11 @@
+
+/// Adds two number
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(9, adder::add(5, 4));
+/// ```
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }

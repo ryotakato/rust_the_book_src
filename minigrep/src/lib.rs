@@ -1,3 +1,8 @@
+//! # Minigrep
+//!
+//! `minigrep` is a mini implementation of grep command
+//! it provides just a function searching words from one file
+
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -10,7 +15,6 @@ pub struct Config {
     pub filename: String,
     pub case_sensitive: bool,
 }
-
 
 mod self_iterator;
 
@@ -56,6 +60,18 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 
+/// search query words from the contents given
+///
+/// # Examples
+/// ```
+/// let query = "duct";
+/// let contents = "\
+/// Rust:
+/// safe, fast, productive.
+/// Pick three.
+/// Duct tape.";
+/// let result = minigrep::search(query, contents);
+/// ```
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     contents.lines()
         .filter(|line| line.contains(query))
